@@ -5,8 +5,10 @@ import time
 import uuid
 
 import numpy as np
+import jax.numpy as jnp
 
 from .maxDct import EmbedMaxDct
+from .dwtSvd import EmbedDwtSvd
 from .dwtDctSvd import EmbedDwtDctSvd
 from .rivaGan import RivaWatermark
 
@@ -35,6 +37,7 @@ class WatermarkEncoder(object):
         """
         start = time.time()
         EmbedMaxDct(self._watermarks, wmLen=self._wmLen)
+        _, _, _ = jnp.linalg.svd(np.random.rand(512, 512))
         elapsed_ms = (time.time() - start) * 1000.0
         logger.info(f"GPU warmup completed in {elapsed_ms:.2f} ms")
 
@@ -95,6 +98,9 @@ class WatermarkEncoder(object):
 
         if method == 'dwtDct':
             embed = EmbedMaxDct(self._watermarks, wmLen=self._wmLen, **configs)
+            return embed.encode(cv2Image)
+        elif method == 'dwtSvd':
+            embed = EmbedDwtSvd(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
         elif method == 'dwtDctSvd':
             embed = EmbedDwtDctSvd(self._watermarks, wmLen=self._wmLen, **configs)
@@ -172,6 +178,9 @@ class WatermarkDecoder(object):
         bits = []
         if method == 'dwtDct':
             embed = EmbedMaxDct(watermarks=[], wmLen=self._wmLen, **configs)
+            bits = embed.decode(cv2Image)
+        elif method == 'dwtSvd':
+            embed = EmbedDwtSvd(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
         elif method == 'dwtDctSvd':
             embed = EmbedDwtDctSvd(watermarks=[], wmLen=self._wmLen, **configs)
