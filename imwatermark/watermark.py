@@ -11,6 +11,7 @@ from .maxDct import EmbedMaxDct
 from .dwtSvd import EmbedDwtSvd
 from .dwtDctSvd import EmbedDwtDctSvd
 from .rivaGan import RivaWatermark
+from .dwt import EmbedDwt
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,9 @@ class WatermarkEncoder(object):
         if method == 'dwtDct':
             embed = EmbedMaxDct(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
+        elif method == 'dwt':
+            embed = EmbedDwt(self._watermarks, wmLen=self._wmLen, **configs)
+            return embed.encode(cv2Image)
         elif method == 'dwtSvd':
             embed = EmbedDwtSvd(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
@@ -179,6 +183,9 @@ class WatermarkDecoder(object):
         if method == 'dwtDct':
             embed = EmbedMaxDct(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
+        elif method == 'dwt':
+            embed = EmbedDwt(watermarks=[], wmLen=self._wmLen, **configs)
+            return embed.decode(cv2Image)
         elif method == 'dwtSvd':
             embed = EmbedDwtSvd(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)

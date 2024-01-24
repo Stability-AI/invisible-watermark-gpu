@@ -62,6 +62,7 @@ class EmbedMaxDct(object):
                 continue
 
             wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, channel], "haar", 1)
+            wv.forward()
 
             scores = self.decode_frame(wv.coeffs[0], self._scales[channel], scores)
 

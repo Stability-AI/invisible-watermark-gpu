@@ -9,7 +9,7 @@ class RivaWatermark(object):
     encoder = None
     decoder = None
 
-    def __init__(self, watermarks=[], wmLen=32, threshold=0.52):
+    def __init__(self, watermarks=[], wmLen=32, threshold=0.52, **kwargs):
         self._watermarks = watermarks
         self._threshold = threshold
         if wmLen not in [32]:

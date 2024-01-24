@@ -54,7 +54,6 @@ class EmbedDwtDctSvd(object):
     def decode_frame(self, frame, scale, scores):
         (row, col) = frame.shape
         num = 0
-
         for i in range(row//self._block):
             for j in range(col//self._block):
                 block = frame[i*self._block : i*self._block + self._block,
@@ -75,14 +74,8 @@ class EmbedDwtDctSvd(object):
 
     def infer_dct_svd(self, block, scale):
         u,s,v = np.linalg.svd(cv2.dct(block))
-
-        score = 0
         score = int ((s[0] % scale) > scale * 0.5)
         return score
-        if score >= 0.5:
-            return 1.0
-        else:
-            return 0.0
 
     def encode_frame(self, frame, scale):
         '''
@@ -99,7 +92,6 @@ class EmbedDwtDctSvd(object):
                 block = frame[i*self._block : i*self._block + self._block,
                               j*self._block : j*self._block + self._block]
                 wmBit = self._watermarks[(num % self._wmLen)]
-
 
                 diffusedBlock = self.diffuse_dct_svd(block, wmBit, scale)
                 frame[i*self._block : i*self._block + self._block,

@@ -34,8 +34,6 @@ class EmbedDwtSvd(object):
             if self._scales[channel] <= 0:
                 continue
 
-            print(f"channel: {channel}")
-
             # send image to GPU
             wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, channel], "haar", 1)
 
@@ -61,41 +59,37 @@ class EmbedDwtSvd(object):
         return bgr_encoded
 
     def decode(self, bgr):
-        (row, col, channels) = bgr.shape
-
-        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)
-
-        scores = [[] for i in range(self._wmLen)]
-        for channel in range(2):
-            if self._scales[channel] <= 0:
-                continue
-
-            wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, channel], "haar", 1)
-
-            scores = self.decode_frame(wv.coeffs[0], self._scales[channel], scores)
-
-        avgScores = list(map(lambda l: np.array(l).mean(), scores))
-
-        bits = np.array(avgScores) * 255 > 127
-        return bits
+        (row, col, _) = bgr.shape
+        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)            
+        wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, 1], "haar", 1)
+        wv.forward()
+        scores = self.decode_frame(wv.coeffs[0], self._scales[1], [])
+        return scores
 
     def decode_frame(self, frame, scale, scores):
-        (row, col) = frame.shape
-        num = 0
+        S_jax_d = jnp.linalg.svd(frame, compute_uv=False)   # 25ms (!)
+        Sd = np.array(S_jax_d)
+        num_singular_values = len(Sd)
 
-        for i in range(row // self._block):
-            for j in range(col // self._block):
-                block = frame[
-                    i * self._block : i * self._block + self._block,
-                    j * self._block : j * self._block + self._block,
-                ]
+        bits = (Sd % scale) > (0.5 * scale)
 
-                score = self.infer_dct_matrix(block, scale)
-                wmBit = num % self._wmLen
-                scores[wmBit].append(score)
-                num = num + 1
+        num_tiles = int(np.floor(num_singular_values / self._wmLen))  # throwing away last partial iter, if any
+        guessed_bits = np.zeros((self._wmLen,), dtype=np.float32)
+        for window in range(num_tiles):
+            guessed_bits += bits[window * self._wmLen : (window + 1) * self._wmLen]
 
-        return scores
+        guessed_bits /= num_tiles
+        guessed_bits_binary = (guessed_bits > 0.5).astype(np.int8)
+
+        # bit_array = np.zeros((num_tiles * self._wmLen), dtype=np.int32)
+        # bit_array[:num_singular_values] = bits
+        # bit_array = bit_array.reshape((num_tiles, self._wmLen))
+        # mean_bits = bit_array.mean(axis=0)
+
+        # rounded_bits = np.round(mean_bits)
+        # correct = (rounded_bits == self._watermarks)
+
+        return guessed_bits_binary
 
     def infer_dct_matrix(self, block, scale):
         pos = np.argmax(abs(block.flatten()[1:])) + 1
@@ -131,14 +125,6 @@ class EmbedDwtSvd(object):
         # from scipy import linalg
         # starttime = time.time(); U, s, Vh = linalg.svd(np.random.rand(512, 512), check_finite=False); print(f"scipy SVD took: {(time.time() - starttime) * 1000:.2f} ms")
         # starttime = time.time(); jnp.linalg.svd(frame); print(f"jnp SVD took: {(time.time() - starttime) * 1000:.2f} ms")
-
-        ### test reconstruction
-        # U, S_jax, Vh = jnp.linalg.svd(frame, full_matrices=True)
-        # S = np.array(S_jax)
-        # smat = np.diag(S)
-        # original_frame = np.dot(U, np.dot(smat, Vh))
-        # print(np.allclose(frame, original_frame, atol=1e-02))
-
         starttime = time.time()
         
         svdtime = time.time()
@@ -187,6 +173,28 @@ class EmbedDwtSvd(object):
 
         # rounded_bits = np.round(mean_bits)
         # correct = (rounded_bits == self._watermarks)
+
+        S_jax_d = jnp.linalg.svd(encoded_frame, compute_uv=False)   # 25ms (!)
+        Sd = np.array(S_jax_d)
+        num_singular_values = len(Sd)
+
+        bits = (Sd % scale) > (0.5 * scale)
+
+        num_tiles = int(np.floor(num_singular_values / self._wmLen))  # throwing away last partial iter, if any
+        guessed_bits = np.zeros((self._wmLen,), dtype=np.float32)
+        num_tiles = 1
+        for window in range(num_tiles):
+            guessed_bits += bits[window * self._wmLen : (window + 1) * self._wmLen]
+
+        guessed_bits /= num_tiles
+        guessed_bits_binary = (guessed_bits > 0.5).astype(np.int8)
+        
+        # WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
+        # WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
+        # from scipy.spatial import distance
+        # print(f"bit error rate: {distance.hamming(guessed_bits_binary, WATERMARK_BITS)}")
+
+        # guessed_bits = self.decode_frame(encoded_frame, scale, [])
 
         # import ipdb; ipdb.set_trace()
 
