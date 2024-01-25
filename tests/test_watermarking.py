@@ -35,8 +35,15 @@ class TestEncodeDecode:
         watermarking_ms = (time.time() - start) * 1000.
         print(f"Watermarking took {watermarking_ms:.2f} ms")
 
-        start = time.time()
         enc_length = 48
         decoder = WatermarkDecoder('bits', enc_length)
+
+        start = time.time()
+        watermarked_bgr = np.array(watermarked)[:, :, ::-1]
+        recovered_watermark = [int(b) for b in decoder.decode(watermarked_bgr, 'dwt', scales=[0, 6, 0])]
         decoding_ms = (time.time() - start) * 1000.
         print(f"Decoding took {decoding_ms:.2f} ms")
+
+        # bit_error_rate = (recovered_watermark == np.array(WATERMARK_BITS)).mean()
+        # print(f"Bit error rate: {bit_error_rate}")
+        # assert bit_error_rate < 0.1, "Bit error rate was too high!"

@@ -2,7 +2,6 @@ import time
 
 import cv2
 import numpy as np
-import jax.numpy as jnp
 from pycudwt import Wavelets
 
 
@@ -21,10 +20,6 @@ class EmbedDwt(object):
             "haar",
             1,
         )
-
-        # there appears to be a warmup cost for the first time 
-        # we call jnp.linalg.svd as well
-        # _, _, _ = jnp.linalg.svd(np.random.rand(512, 512))
 
     def encode(self, bgr):
         (row, col, channels) = bgr.shape
@@ -111,19 +106,6 @@ class EmbedDwt(object):
         #     import ipdb; ipdb.set_trace()
 
         return guessed_bits_binary
-
-    def infer_dct_matrix(self, block, scale):
-        pos = np.argmax(abs(block.flatten()[1:])) + 1
-        i, j = pos // self._block, pos % self._block
-
-        val = block[i][j]
-        if val < 0:
-            val = abs(val)
-
-        if (val % scale) > 0.5 * scale:
-            return 1
-        else:
-            return 0
 
     def encode_frame(self, frame, scale):
         """

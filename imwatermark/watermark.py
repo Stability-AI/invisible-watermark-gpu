@@ -8,8 +8,10 @@ import numpy as np
 import jax.numpy as jnp
 
 from .maxDct import EmbedMaxDct
+from .maxDctOptimized import EmbedMaxDctOptimized
 from .dwtSvd import EmbedDwtSvd
 from .dwtDctSvd import EmbedDwtDctSvd
+from .dwtDctSvdOptimized import EmbedDwtDctSvdOptimized
 from .rivaGan import RivaWatermark
 from .dwt import EmbedDwt
 
@@ -38,6 +40,7 @@ class WatermarkEncoder(object):
         """
         start = time.time()
         EmbedMaxDct(self._watermarks, wmLen=self._wmLen)
+        EmbedDwtDctSvdOptimized(self._watermarks, wmLen=self._wmLen)
         _, _, _ = jnp.linalg.svd(np.random.rand(512, 512))
         elapsed_ms = (time.time() - start) * 1000.0
         logger.info(f"GPU warmup completed in {elapsed_ms:.2f} ms")
@@ -100,6 +103,9 @@ class WatermarkEncoder(object):
         if method == 'dwtDct':
             embed = EmbedMaxDct(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
+        elif method == 'dwtDctOptimized':
+            embed = EmbedMaxDctOptimized(self._watermarks, wmLen=self._wmLen, **configs)
+            return embed.encode(cv2Image)
         elif method == 'dwt':
             embed = EmbedDwt(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
@@ -108,6 +114,9 @@ class WatermarkEncoder(object):
             return embed.encode(cv2Image)
         elif method == 'dwtDctSvd':
             embed = EmbedDwtDctSvd(self._watermarks, wmLen=self._wmLen, **configs)
+            return embed.encode(cv2Image)
+        elif method == 'dwtDctSvdOptimized':
+            embed = EmbedDwtDctSvdOptimized(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
         elif method == 'rivaGan':
             embed = RivaWatermark(self._watermarks, self._wmLen)
@@ -183,6 +192,9 @@ class WatermarkDecoder(object):
         if method == 'dwtDct':
             embed = EmbedMaxDct(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
+        elif method == 'dwtDctOptimized':
+            embed = EmbedMaxDctOptimized(watermarks=[], wmLen=self._wmLen, **configs)
+            return embed.decode(cv2Image)
         elif method == 'dwt':
             embed = EmbedDwt(watermarks=[], wmLen=self._wmLen, **configs)
             return embed.decode(cv2Image)
@@ -191,6 +203,9 @@ class WatermarkDecoder(object):
             bits = embed.decode(cv2Image)
         elif method == 'dwtDctSvd':
             embed = EmbedDwtDctSvd(watermarks=[], wmLen=self._wmLen, **configs)
+            bits = embed.decode(cv2Image)
+        elif method == 'dwtDctSvdOptimized':
+            embed = EmbedDwtDctSvdOptimized(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
         elif method == 'rivaGan':
             embed = RivaWatermark(watermarks=[], wmLen=self._wmLen, **configs)

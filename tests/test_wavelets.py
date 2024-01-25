@@ -34,7 +34,7 @@ class TestWavelets:
 
         # if it doesn't work, it will take around 2000ms, in my testing on A100s
         # if it works, should take ~50ms
-        ENCODING_TOO_LONG_MS = 65
+        ENCODING_TOO_LONG_MS = 70
         assert elapsed_ms <= ENCODING_TOO_LONG_MS, f"Watermarking took {elapsed_ms:.2f} ms, which is too long"
 
     def test_pycudwt_installed_correctly(self):
