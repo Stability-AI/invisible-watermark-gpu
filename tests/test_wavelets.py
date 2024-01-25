@@ -8,7 +8,7 @@ from imwatermark import WatermarkEncoder
 
 np.random.seed(42)
 
-METHOD_DWT = 'dwt'
+METHOD_WATERMARKING = 'dwtDctSvdOptimized'
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
 WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
 
@@ -29,7 +29,7 @@ class TestWavelets:
 
         start = time.time()
         image_bgr = np.array(image_rgb)[:, :, ::-1]
-        watermarked_bgr = wm.encode(image_bgr, METHOD_DWT)
+        watermarked_bgr = wm.encode(image_bgr, METHOD_WATERMARKING)
         watermarked_rgb = Image.fromarray(watermarked_bgr[:, :, ::-1])
         elapsed_ms = (time.time() - start) * 1000.
         print(f"test_fast_watermarking(): Watermarking took {elapsed_ms:.2f} ms")
