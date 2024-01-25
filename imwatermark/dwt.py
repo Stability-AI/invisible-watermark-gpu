@@ -55,7 +55,7 @@ class EmbedDwt(object):
 
     def decode(self, bgr):
         (row, col, _) = bgr.shape
-        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)            
+        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)
         wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, 1], "haar", 1)
         wv.forward()
         scores = self.decode_frame(wv.coeffs[0], self._scales[1], [])
@@ -63,48 +63,19 @@ class EmbedDwt(object):
 
     def decode_frame(self, frame, scale, scores):
         frame_long = frame.flatten()
-
-        # WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
-        # WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
-
         raw = (frame_long % scale) / scale
-        # raw[(raw >= 0.4) & (raw <= 0.6)] = 0.5
-        # raw[(raw <= 0.1)] = 0.5
-        # raw[(raw >= 0.9)] = 0.5
-        # raw[(raw == 0.0)] = 0.5 + np.random.rand(len(raw[(raw == 0.0)])) * 0.001
-        # len(raw[(raw == 0.0)])
 
-        # bits = (frame_long % scale) > (0.5 * scale)
-        # import matplotlib.pyplot as plt
-        # plt.clf()
-        # plt.hist(raw, bins=100)
-        # plt.savefig(f"raw_hist_{scale}.png")
-
-        # window_accs =[]
-
-        num_tiles = int(np.floor(len(frame_long) / self._wmLen))  # throwing away last partial iter, if any
+        num_tiles = int(
+            np.floor(len(frame_long) / self._wmLen)
+        )  # throwing away last partial iter, if any
         guessed_bits = np.zeros((self._wmLen,), dtype=np.float32)
         for window in range(num_tiles):
             window_raw = raw[window * self._wmLen : (window + 1) * self._wmLen]
             window_bits = window_raw > 0.5
-            # acc = (window_bits == WATERMARK_BITS).sum() / len(window_bits)
-            # print(f"Window [{window}]: {acc}")
-            # if acc < 0.6:
-            #     import ipdb; ipdb.set_trace()
             guessed_bits += window_bits
-            # window_accs.append(acc)
 
-        # import matplotlib.pyplot as plt
-        # plt.clf()
-        # plt.plot(window_accs)
-        # plt.savefig("window_accs.png")
-        # import ipdb; ipdb.set_trace()
-        
         guessed_bits /= num_tiles
         guessed_bits_binary = (guessed_bits > 0.5).astype(np.int8)
-        # if guessed_bits_binary.sum() == 0:
-        #     import ipdb; ipdb.set_trace()
-
         return guessed_bits_binary
 
     def encode_frame(self, frame, scale):
@@ -116,27 +87,12 @@ class EmbedDwt(object):
         For i-th block, we encode watermark[i] bit into it
         """
         (row, col) = frame.shape
-        num_rows = row // self._block
-        num_cols = col // self._block
-        num_cells = num_rows * num_cols
-
-        # import ipdb; ipdb.set_trace()
-
         frame_long = frame.flatten()
 
         num_tiles = int(np.ceil(len(frame_long) / self._wmLen))
-        wmBits_tiled = np.tile(np.array(self._watermarks).astype(np.int32), num_tiles)[:len(frame_long)]
+        wmBits_tiled = np.tile(np.array(self._watermarks).astype(np.int32), num_tiles)[
+            : len(frame_long)
+        ]
 
         frame_long = (frame_long // scale + 0.25 + 0.5 * wmBits_tiled) * scale
-
-        ### DECODE
-        # decoded_bits = self.decode_frame(frame, scale, [])
-        # if (decoded_bits == np.array(self._watermarks)).sum() / len(self._watermarks) < 0.5: 
-        #     print("Bad score, why??")
-        #     raw = (frame_long % scale) / scale
-        #     import ipdb; ipdb.set_trace()
-        
-        # guessed_bits = (frame_long % scale) > (0.5 * scale)
-        # guessed_bits == wmBits_tiled
-        
-        return frame_long.reshape((row, col)) 
+        return frame_long.reshape((row, col))

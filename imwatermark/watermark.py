@@ -4,16 +4,16 @@ import struct
 import time
 import uuid
 
-import numpy as np
 import jax.numpy as jnp
+import numpy as np
 
-from .maxDct import EmbedMaxDct
-from .maxDctOptimized import EmbedMaxDctOptimized
-from .dwtSvd import EmbedDwtSvd
+from .dwt import EmbedDwt
 from .dwtDctSvd import EmbedDwtDctSvd
 from .dwtDctSvdOptimized import EmbedDwtDctSvdOptimized
+from .dwtSvd import EmbedDwtSvd
+from .maxDct import EmbedMaxDct
+from .maxDctOptimized import EmbedMaxDctOptimized
 from .rivaGan import RivaWatermark
-from .dwt import EmbedDwt
 
 logger = logging.getLogger(__name__)
 
@@ -95,34 +95,36 @@ class WatermarkEncoder(object):
     def get_length(self):
         return self._wmLen
 
-    def encode(self, cv2Image, method='dwtDct', **configs):
+    def encode(self, cv2Image, method="dwtDct", **configs):
         (r, c, channels) = cv2Image.shape
-        if r*c < 256*256:
-            raise ValueError('image too small, should be larger than 256x256')
+        if r * c < 256 * 256:
+            raise ValueError("image too small, should be larger than 256x256")
 
-        if method == 'dwtDct':
+        if method == "dwtDct":
             embed = EmbedMaxDct(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
-        elif method == 'dwtDctOptimized':
+        elif method == "dwtDctOptimized":
             embed = EmbedMaxDctOptimized(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
-        elif method == 'dwt':
+        elif method == "dwt":
             embed = EmbedDwt(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
-        elif method == 'dwtSvd':
+        elif method == "dwtSvd":
             embed = EmbedDwtSvd(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
-        elif method == 'dwtDctSvd':
+        elif method == "dwtDctSvd":
             embed = EmbedDwtDctSvd(self._watermarks, wmLen=self._wmLen, **configs)
             return embed.encode(cv2Image)
-        elif method == 'dwtDctSvdOptimized':
-            embed = EmbedDwtDctSvdOptimized(self._watermarks, wmLen=self._wmLen, **configs)
+        elif method == "dwtDctSvdOptimized":
+            embed = EmbedDwtDctSvdOptimized(
+                self._watermarks, wmLen=self._wmLen, **configs
+            )
             return embed.encode(cv2Image)
-        elif method == 'rivaGan':
+        elif method == "rivaGan":
             embed = RivaWatermark(self._watermarks, self._wmLen)
             return embed.encode(cv2Image)
         else:
-            raise NameError('%s is not supported' % method)
+            raise NameError("%s is not supported" % method)
 
 
 class WatermarkDecoder(object):
@@ -183,33 +185,33 @@ class WatermarkDecoder(object):
         else:
             return self.reconstruct_bytes(bits)
 
-    def decode(self, cv2Image, method='dwtDct', **configs):
+    def decode(self, cv2Image, method="dwtDct", **configs):
         (r, c, channels) = cv2Image.shape
-        if r*c < 256*256:
-            raise ValueError('image too small, should be larger than 256x256')
+        if r * c < 256 * 256:
+            raise ValueError("image too small, should be larger than 256x256")
 
         bits = []
-        if method == 'dwtDct':
+        if method == "dwtDct":
             embed = EmbedMaxDct(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
-        elif method == 'dwtDctOptimized':
+        elif method == "dwtDctOptimized":
             embed = EmbedMaxDctOptimized(watermarks=[], wmLen=self._wmLen, **configs)
             return embed.decode(cv2Image)
-        elif method == 'dwt':
+        elif method == "dwt":
             embed = EmbedDwt(watermarks=[], wmLen=self._wmLen, **configs)
             return embed.decode(cv2Image)
-        elif method == 'dwtSvd':
+        elif method == "dwtSvd":
             embed = EmbedDwtSvd(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
-        elif method == 'dwtDctSvd':
+        elif method == "dwtDctSvd":
             embed = EmbedDwtDctSvd(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
-        elif method == 'dwtDctSvdOptimized':
+        elif method == "dwtDctSvdOptimized":
             embed = EmbedDwtDctSvdOptimized(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
-        elif method == 'rivaGan':
+        elif method == "rivaGan":
             embed = RivaWatermark(watermarks=[], wmLen=self._wmLen, **configs)
             bits = embed.decode(cv2Image)
         else:
-            raise NameError('%s is not supported' % method)
+            raise NameError("%s is not supported" % method)
         return self.reconstruct(bits)

@@ -1,8 +1,8 @@
 import time
 
 import cv2
-import numpy as np
 import jax.numpy as jnp
+import numpy as np
 from pycudwt import Wavelets
 
 
@@ -22,7 +22,7 @@ class EmbedDwtSvd(object):
             1,
         )
 
-        # there appears to be a warmup cost for the first time 
+        # there appears to be a warmup cost for the first time
         # we call jnp.linalg.svd as well
         _, _, _ = jnp.linalg.svd(np.random.rand(512, 512))
 
@@ -60,20 +60,22 @@ class EmbedDwtSvd(object):
 
     def decode(self, bgr):
         (row, col, _) = bgr.shape
-        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)            
+        yuv = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV)
         wv = Wavelets(yuv[: row // 4 * 4, : col // 4 * 4, 1], "haar", 1)
         wv.forward()
         scores = self.decode_frame(wv.coeffs[0], self._scales[1], [])
         return scores
 
     def decode_frame(self, frame, scale, scores):
-        S_jax_d = jnp.linalg.svd(frame, compute_uv=False)   # 25ms (!)
+        S_jax_d = jnp.linalg.svd(frame, compute_uv=False)  # 25ms (!)
         Sd = np.array(S_jax_d)
         num_singular_values = len(Sd)
 
         bits = (Sd % scale) > (0.5 * scale)
 
-        num_tiles = int(np.floor(num_singular_values / self._wmLen))  # throwing away last partial iter, if any
+        num_tiles = int(
+            np.floor(num_singular_values / self._wmLen)
+        )  # throwing away last partial iter, if any
         guessed_bits = np.zeros((self._wmLen,), dtype=np.float32)
         for window in range(num_tiles):
             guessed_bits += bits[window * self._wmLen : (window + 1) * self._wmLen]
@@ -126,10 +128,10 @@ class EmbedDwtSvd(object):
         # starttime = time.time(); U, s, Vh = linalg.svd(np.random.rand(512, 512), check_finite=False); print(f"scipy SVD took: {(time.time() - starttime) * 1000:.2f} ms")
         # starttime = time.time(); jnp.linalg.svd(frame); print(f"jnp SVD took: {(time.time() - starttime) * 1000:.2f} ms")
         starttime = time.time()
-        
+
         svdtime = time.time()
         # U, S, Vh = np.linalg.svd(frame)  # 160ms
-        U, S_jax, Vh = jnp.linalg.svd(frame)   # 25ms (!)
+        U, S_jax, Vh = jnp.linalg.svd(frame)  # 25ms (!)
         S = np.array(S_jax)
         num_singular_values = len(S)
         print(f"jnp SVD took: {(time.time() - svdtime) * 1000:.2f} ms")
@@ -140,9 +142,11 @@ class EmbedDwtSvd(object):
         tilingtime = time.time()
         num_tiles = int(np.ceil(num_singular_values / self._wmLen))
         bits_length = int(num_singular_values)
-        wmBits_tiled = np.tile(np.array(self._watermarks).astype(np.int32), num_tiles)[:bits_length]
+        wmBits_tiled = np.tile(np.array(self._watermarks).astype(np.int32), num_tiles)[
+            :bits_length
+        ]
         print(f"tiling took: {(time.time() - tilingtime) * 1000:.2f} ms")
-        
+
         # encode bits, one per singular value
         enctime = time.time()
         S = (S // scale + 0.25 + 0.5 * wmBits_tiled) * scale
@@ -174,13 +178,15 @@ class EmbedDwtSvd(object):
         # rounded_bits = np.round(mean_bits)
         # correct = (rounded_bits == self._watermarks)
 
-        S_jax_d = jnp.linalg.svd(encoded_frame, compute_uv=False)   # 25ms (!)
+        S_jax_d = jnp.linalg.svd(encoded_frame, compute_uv=False)  # 25ms (!)
         Sd = np.array(S_jax_d)
         num_singular_values = len(Sd)
 
         bits = (Sd % scale) > (0.5 * scale)
 
-        num_tiles = int(np.floor(num_singular_values / self._wmLen))  # throwing away last partial iter, if any
+        num_tiles = int(
+            np.floor(num_singular_values / self._wmLen)
+        )  # throwing away last partial iter, if any
         guessed_bits = np.zeros((self._wmLen,), dtype=np.float32)
         num_tiles = 1
         for window in range(num_tiles):
@@ -188,7 +194,7 @@ class EmbedDwtSvd(object):
 
         guessed_bits /= num_tiles
         guessed_bits_binary = (guessed_bits > 0.5).astype(np.int8)
-        
+
         # WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
         # WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
         # from scipy.spatial import distance
@@ -214,5 +220,5 @@ class EmbedDwtSvd(object):
         # plt.clf()
         # plt.hist(frame_diffs, bins=50, range=(-5, 5))
         # plt.savefig("./histogram.png")
-        
-        return encoded_frame  #, np.array(S_jax)
+
+        return encoded_frame  # , np.array(S_jax)

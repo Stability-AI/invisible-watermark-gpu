@@ -1,1 +1,1 @@
-from .watermark import WatermarkEncoder, WatermarkDecoder
+from .watermark import WatermarkDecoder, WatermarkEncoder

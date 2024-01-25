@@ -8,7 +8,7 @@ from imwatermark import WatermarkEncoder
 
 np.random.seed(42)
 
-METHOD_DWT_DCT = 'dwtDctOptimized'
+METHOD_DWT = 'dwt'
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
 WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
 
@@ -28,13 +28,13 @@ class TestWavelets:
         image_rgb = np.random.randint(low=0, high=255, size=(1024, 1024, 3), dtype=np.uint8)
         wm.set_watermark("bits", WATERMARK_BITS)
         image_bgr = np.array(image_rgb)[:, :, ::-1]
-        watermarked_bgr = wm.encode(image_bgr, METHOD_DWT_DCT)
+        watermarked_bgr = wm.encode(image_bgr, METHOD_DWT)
         watermarked_rgb = Image.fromarray(watermarked_bgr[:, :, ::-1])
         elapsed_ms = (time.time() - start) * 1000.
 
         # if it doesn't work, it will take around 2000ms, in my testing on A100s
-        # if it works, should take ~50ms
-        ENCODING_TOO_LONG_MS = 70
+        # if it works, should take ~79ms
+        ENCODING_TOO_LONG_MS = 85
         assert elapsed_ms <= ENCODING_TOO_LONG_MS, f"Watermarking took {elapsed_ms:.2f} ms, which is too long"
 
     def test_pycudwt_installed_correctly(self):
