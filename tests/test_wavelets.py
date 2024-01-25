@@ -23,18 +23,20 @@ class TestWavelets:
         Ensure our GPU warmup worked correctly. Otherwise first request every time will
         take around 2 seconds to load CUDA libraries, which is too long.
         """
-        start = time.time()
         wm = WatermarkEncoder()
         image_rgb = np.random.randint(low=0, high=255, size=(1024, 1024, 3), dtype=np.uint8)
         wm.set_watermark("bits", WATERMARK_BITS)
+
+        start = time.time()
         image_bgr = np.array(image_rgb)[:, :, ::-1]
         watermarked_bgr = wm.encode(image_bgr, METHOD_DWT)
         watermarked_rgb = Image.fromarray(watermarked_bgr[:, :, ::-1])
         elapsed_ms = (time.time() - start) * 1000.
+        print(f"test_fast_watermarking(): Watermarking took {elapsed_ms:.2f} ms")
 
         # if it doesn't work, it will take around 2000ms, in my testing on A100s
-        # if it works, should take ~79ms
-        ENCODING_TOO_LONG_MS = 85
+        # if it works, should take ~65ms
+        ENCODING_TOO_LONG_MS = 80
         assert elapsed_ms <= ENCODING_TOO_LONG_MS, f"Watermarking took {elapsed_ms:.2f} ms, which is too long"
 
     def test_pycudwt_installed_correctly(self):
