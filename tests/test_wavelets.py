@@ -8,7 +8,7 @@ from imwatermark import WatermarkEncoder
 
 np.random.seed(42)
 
-METHOD_DWT_DCT = 'dwtDct'
+METHOD_DWT_DCT = 'dwtDctOptimized'
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
 WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
 

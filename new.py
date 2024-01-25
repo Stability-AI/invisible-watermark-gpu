@@ -19,7 +19,7 @@ from imwatermark import WatermarkEncoder, WatermarkDecoder
 
 
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
-WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]][:32]
+WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]  #[:32]
 BIT_ERROR_RATE_THRESH = 0.3
 TEST_ATTACKS = True
 
@@ -32,7 +32,7 @@ def compute_and_add_ber(pil_rgb_image, method_string, method_dict_to_save_to, sc
 
 # get image paths for LAION hr dataset
 print("Finding images...")
-FIRST_N = 20
+FIRST_N = 500
 img_paths = [path for path in glob.glob("../laion1024/*.jpg")]
 img_paths = img_paths[:FIRST_N]
 # random.shuffle(img_paths)
@@ -49,6 +49,7 @@ METHODS_AVAILIABLE = [
     ('dwtDctOptimized', 16),
     ('dwt', 24),
     ('dwtDctSvdOptimized', 24),
+    ('rivaGan', -1),
 ]
 
 # (method, scale)
