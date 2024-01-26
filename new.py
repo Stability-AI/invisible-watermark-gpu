@@ -18,7 +18,7 @@ from imwatermark import WatermarkDecoder, WatermarkEncoder
 
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
 WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]  # [:32]
-BIT_ERROR_RATE_THRESH = 0.3
+BIT_ERROR_RATE_THRESH = 0.2
 TEST_ATTACKS = True
 
 
@@ -42,8 +42,8 @@ def compute_and_add_ber(
 print("Finding images...")
 FIRST_N = 500
 img_paths = [path for path in glob.glob("../laion1024/*.jpg")]
+random.shuffle(img_paths)
 img_paths = img_paths[:FIRST_N]
-# random.shuffle(img_paths)
 
 # warmup
 encoder = WatermarkEncoder()
@@ -88,8 +88,8 @@ with open("results.txt", "w") as f:
     attack_random_noise_ber = defaultdict(list)
     attack_rotate_ber = defaultdict(list)
 
-    for method_string, SCALE in METHODS_AVAILIABLE:
-        method = f"{method_string}_scale={SCALE}"
+    for method_string, scale in METHODS_AVAILIABLE:
+        method = f"{method_string}_scale={scale}"
 
         # ensure folder exists
         folder = f"../laion1024_results/{method}/"
@@ -97,8 +97,8 @@ with open("results.txt", "w") as f:
             os.makedirs(folder)
 
     for img_path in tqdm(img_paths):
-        for method_string, SCALE in METHODS_AVAILIABLE:
-            method = f"{method_string}_scale={SCALE}"
+        for method_string, scale in METHODS_AVAILIABLE:
+            method = f"{method_string}_scale={scale}"
 
             # load the image from disk
             if not os.path.exists(img_path):
@@ -111,11 +111,11 @@ with open("results.txt", "w") as f:
             # if any special setup needs to be done for this method, do it here
             starttime = time.time()
             watermark_bits = WATERMARK_BITS
+            scales = [0, scale, 0]
+
             if "riva" in method.lower():
                 watermark_bits = WATERMARK_BITS[:32]
                 scales = None
-            else:
-                scales = [0, SCALE, 0]
 
             encoder.set_watermark("bits", watermark_bits)
             enc_length = encoder.get_length()
@@ -319,8 +319,8 @@ with open("results.txt", "w") as f:
     avg_hamming_dist = {}
     percent_passing_below_error_threshold = {}
 
-    for method_string, SCALE in METHODS_AVAILIABLE:
-        method = f"{method_string}_scale={SCALE}"
+    for method_string, scale in METHODS_AVAILIABLE:
+        method = f"{method_string}_scale={scale}"
         f.write(f"\n==== RESULTS, method: {method} ====\n")
 
         # latency

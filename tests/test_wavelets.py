@@ -11,11 +11,13 @@ np.random.seed(42)
 METHOD_WATERMARKING = 'dwtDctSvdOptimized'
 WATERMARK_MESSAGE = 0b101100111110110010010000011110111011000110011110
 WATERMARK_BITS = [int(bit) for bit in bin(WATERMARK_MESSAGE)[2:]]
+ENCODING_TOO_LONG_MS = 125
 
 # warmup GPU
 Wavelets(np.random.randint(low=0, high=255, size=(1024, 1024), dtype=np.uint8), "haar", 1)
-WatermarkEncoder().warmup_gpu()
-
+encoder = WatermarkEncoder()
+encoder.warmup_gpu()
+encoder.set_watermark("bits", WATERMARK_BITS)
 
 class TestWavelets:
     def test_fast_watermarking(self):
@@ -23,21 +25,19 @@ class TestWavelets:
         Ensure our GPU warmup worked correctly. Otherwise first request every time will
         take around 2 seconds to load CUDA libraries, which is too long.
         """
-        wm = WatermarkEncoder()
-        image_rgb = np.random.randint(low=0, high=255, size=(1024, 1024, 3), dtype=np.uint8)
-        wm.set_watermark("bits", WATERMARK_BITS)
+        num_iters = 10
+        times = np.zeros(num_iters)
+        for i in range(num_iters):
+            image_rgb = np.random.randint(low=0, high=255, size=(1024, 1024, 3), dtype=np.uint8)
+            start = time.time()
+            image_bgr = np.array(image_rgb)[:, :, ::-1]
+            watermarked_bgr = encoder.encode(image_bgr, METHOD_WATERMARKING)
+            watermarked_rgb = Image.fromarray(watermarked_bgr[:, :, ::-1])
+            times[i] = (time.time() - start) * 1000.
 
-        start = time.time()
-        image_bgr = np.array(image_rgb)[:, :, ::-1]
-        watermarked_bgr = wm.encode(image_bgr, METHOD_WATERMARKING)
-        watermarked_rgb = Image.fromarray(watermarked_bgr[:, :, ::-1])
-        elapsed_ms = (time.time() - start) * 1000.
-        print(f"test_fast_watermarking(): Watermarking took {elapsed_ms:.2f} ms")
-
-        # if it doesn't work, it will take around 2000ms, in my testing on A100s
-        # if it works, should take ~65ms
-        ENCODING_TOO_LONG_MS = 80
-        assert elapsed_ms <= ENCODING_TOO_LONG_MS, f"Watermarking took {elapsed_ms:.2f} ms, which is too long"
+        mean_ms = times[i].mean()
+        print(f"test_fast_watermarking(): Watermarking took on average {mean_ms:.2f} ms")
+        assert mean_ms <= ENCODING_TOO_LONG_MS, f"Watermarking took {mean_ms:.2f} ms, which is too long"
 
     def test_pycudwt_installed_correctly(self):
         """
