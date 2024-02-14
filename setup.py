@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
   name='invisible-watermark-gpu',
-  version='0.2.3',
+  version='0.2.4',
   author='Will Drevo',
   author_email='will.drevo@stability.ai',
   description='GPU adaptation for the library for creating and decoding invisible image watermarks',
