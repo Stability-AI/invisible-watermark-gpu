@@ -21,7 +21,7 @@ class EmbedDwtDctSvdCorner(object):
     def encode(self, bgr, algorithm='dwtDctSvd'):
         (row, col, channels) = bgr.shape
 
-        # Calculate the region to watermark (1/32 x 1/32 of the image)
+        # Calculate the region to watermark (1/16 x 1/16 of the image)
         region_row = row // 16
         region_col = col // 16
 
@@ -42,7 +42,7 @@ class EmbedDwtDctSvdCorner(object):
     def decode(self, bgr, algorithm='dwtDctSvd'):
         (row, col, channels) = bgr.shape
 
-        # Calculate the region to decode (1/32 x 1/32 of the image)
+        # Calculate the region to decode (1/16 x 1/16 of the image)
         region_row = row // 16
         region_col = col // 16
 
